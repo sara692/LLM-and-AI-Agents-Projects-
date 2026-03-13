@@ -1,4 +1,4 @@
-# LLM and AI Agents
+# LLM and AI Agents Projects
 
 A collection of hands-on projects exploring Large Language Models, AI Agents, and hybrid decision systems. Each project is self-contained with its own code, data, and documentation.
 
