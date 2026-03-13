@@ -55,4 +55,5 @@ Projects are built for learning and experimentation. Each one focuses on a speci
 ---
 
 ## Contact
-Mail:saraomran433@gmail.com
+**Sara Ibrahim**
+- Email: saraomran433@gmail.com
