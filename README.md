@@ -27,7 +27,7 @@
 | 02 | [Self-Correcting Analytics Agent](./02_Self_Correcting_Analytics_Agent/) | Decision-driven analytics agent with AST code validation, auto-repair loop, schema mapping, ambiguity handling, and red-team evaluation harness | Phi-3.5 Mini · Pandas · AST · BitsAndBytes |
 | 03 | [Multi-Stage NLP Workflow with LangGraph & HuggingFace](./03_Multi_Stage_NLP_Workflow/) | Sequential NLP pipeline that summarizes raw text, translates it to French, and performs sentiment analysis using free HuggingFace models orchestrated via LangGraph | LangGraph · HuggingFace API · BART · Helsinki-NLP · DistilBERT |
 | 04 | [Smart Travel Agent using LangGraph & Tavily](./04_Smart_Travel_Agent/) | ReAct-style agentic travel assistant where the LLM autonomously decides which tools to call — real-time web search, current date, and math — to answer travel queries | LangGraph · HuggingFace · Tavily · Qwen2.5 |
-| 05 | [Smart Chat Assistant with Memory](./05_Smart_Chat_Assistant/) | Production-style chat system with persistent PostgreSQL memory, semantic vector retrieval, rolling summarization, and a full REST API + Gradio UI | LangChain · PostgreSQL · pgvector · FastAPI · Gradio · Qwen3 |
+| 05 | [Smart Chat Assistant with Memory](./05_Smart_Chat_Assistant_with_Memory/) | Production-style chat system with persistent PostgreSQL memory, semantic vector retrieval, rolling summarization, and a full REST API + Gradio UI | LangChain · PostgreSQL · pgvector · FastAPI · Gradio · Qwen3 |
 
 ---
 
