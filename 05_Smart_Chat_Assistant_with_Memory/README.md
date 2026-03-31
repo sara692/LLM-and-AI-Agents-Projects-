@@ -260,6 +260,7 @@ Special thanks and appreciation to:
 
 **DEPI (Digital Egypt Pioneers Initiative)**
 For providing the scholarship, resources, and the professional environment to foster innovation in the field of AI and data engineering.
+
 **Eng. Baraa Abu Salout**
 For his exceptional mentorship, technical guidance, and for sharing his deep expertise in AI systems, LangChain, and production-grade architecture design.
 
