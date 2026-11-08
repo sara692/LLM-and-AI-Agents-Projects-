@@ -153,7 +153,8 @@ Explain   : Your loan request of $25,000 has been rejected based on our
 
 ## 📄 License
 
-This project is released under the MIT License — feel free to use it for learning or as a portfolio reference.
+This project is released under the MIT License — feel free to use it for
+learning or as a portfolio reference.
 
 ---
 
@@ -165,14 +166,13 @@ This project is released under the MIT License — feel free to use it for learn
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/sara-ibrahim-omran)  
 [![Email](https://img.shields.io/badge/Email-Contact%20Me-red?style=flat&logo=gmail)](mailto:Saraomran433@gmail.com)
 
----
-
-## 🌟 Let's Connect!
+### 🌟 Let's Connect!
 
 I'm passionate about solving real-world problems with data, machine learning, and AI. Feel free to reach out for:
 
 - 💼 Job opportunities and collaborations
 - 📚 Technical discussions and knowledge sharing
 - 🚀 Project ideas and innovative solutions
-- ⭐ If you find this project helpful, please give the repo a star!
+
+**⭐ If you find this project helpful, please give the repo a star!**
 
