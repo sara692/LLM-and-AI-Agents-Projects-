@@ -18,24 +18,80 @@ It combines the ideas of the two notebooks:
 
 ## Architecture
 
-```
-Streamlit UI  ──HTTP──▶  FastAPI  ──▶  AnalyticsAgent
-                                          │
-   1 classify_request   regex policy gate (no LLM)         ─▶ reject
-   2 infer_column_map   synonyms + LLM (validated)         ─▶ clarify (ONE question)
-   3 run_analysis       LLM writes pandas
-                          └ AST validator ─▶ sandbox ─▶ output guard
-                          └ on error: LLM repairs, up to 5 attempts ─▶ fail (safe message)
-   4 answer_user        LLM phrases the already-aggregated result
+Green boxes are plain code (no LLM). Blue boxes are the steps where the LLM is used.
+
+```mermaid
+flowchart TD
+    UI(["Streamlit UI"]) -- "HTTP" --> API["FastAPI<br/>POST /ask"]
+    API --> AG["AnalyticsAgent"]
+
+    AG --> S1{"1. classify_request<br/>regex policy gate"}
+    S1 -- "unsafe" --> REJ(["reject"])
+    S1 -- "allowed" --> S2["2. infer_column_map<br/>synonyms + LLM, validated"]
+    S2 --> AMB{"ambiguous term?"}
+    AMB -- "yes" --> CLR(["clarify<br/>ONE short question"])
+    AMB -- "no" --> S3["3. run_analysis<br/>LLM writes pandas"]
+    S3 --> GUARD["AST validator, sandbox,<br/>output guard"]
+    GUARD -- "error: LLM repairs,<br/>up to 5 attempts" --> S3
+    GUARD -- "5 attempts used" --> FAIL(["fail<br/>safe message"])
+    GUARD -- "ok" --> S4["4. answer_user<br/>LLM phrases the aggregated result"]
+    S4 --> ANS(["answer"])
+
+    classDef code fill:#e6f4ea,stroke:#2e7d32,color:#0d1b2a
+    classDef llm fill:#e3f2fd,stroke:#1565c0,color:#0d1b2a
+    classDef stop fill:#fce4ec,stroke:#c62828,color:#0d1b2a
+    class S1,AMB,GUARD code
+    class S2,S3,S4 llm
+    class REJ,CLR,FAIL,ANS stop
 ```
 
-### Defence in depth
+### Self-correction loop
+
+What happens when the model writes broken code: the error goes back to the model, which fixes it. After 5 failed attempts the agent returns a safe message instead of crashing.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Agent
+    participant L as LLM
+    participant V as AST validator
+    participant S as Sandbox
+
+    A->>L: question + column names (no rows)
+    L-->>A: pandas code (attempt 1)
+    A->>V: check code
+    V-->>A: OK
+    A->>S: run code
+    S-->>A: KeyError 'salry'
+    Note over A: attempt 1 failed
+    A->>L: repair_prompt(schema, question, code, error)
+    L-->>A: fixed code (attempt 2)
+    A->>V: check code
+    V-->>A: OK
+    A->>S: run code
+    S-->>A: aggregated result
+    A->>L: explain this aggregated result
+    L-->>A: short plain-English answer
+    Note over A: outcome = answer, repairs = 1
+```
+
+## Defence in depth
+
+Every layer is independent. A request has to pass all of them, and the LLM is not trusted by any of them.
+
+```mermaid
+flowchart LR
+    Q(["Question"]) --> L1["Policy gate"] --> L2["Hidden PII<br/>columns"] --> L3["AST<br/>validator"] --> L4["Aggregation<br/>contract"] --> L5["Sandbox"] --> L6["Output<br/>guard"] --> R(["Result"])
+
+    classDef layer fill:#e6f4ea,stroke:#2e7d32,color:#0d1b2a
+    class L1,L2,L3,L4,L5,L6 layer
+```
 
 | Layer | What it stops |
 |---|---|
 | Policy gate | "show all rows", `df.head()`, "export to CSV", "Omar's salary", prompt injection, debug dumps |
 | Hidden PII columns | Columns like `name`, `email`, `phone` are never shown to the LLM and can't be referenced |
-| AST validator | imports, loops, comprehensions, functions, `eval/open/getattr`, dunders, `to_*`/`read_*`, `.query`, `.format`, raw `head()/iloc` |
+| AST validator | imports, loops, comprehensions, functions, `eval`/`open`/`getattr`, dunders, `to_*`/`read_*`, `.query`, `.format`, raw `head()`/`iloc` |
 | Aggregation contract | code must contain a reducing call (`mean`, `sum`, `groupby…agg`, `value_counts`…) |
 | Sandbox | empty-ish builtins, no file-capable `pd` functions, private dataframe copy, timeout (`SANDBOX_MODE=process` can kill runaway code) |
 | Output guard | max 50 rows, no raw-row-sized results, no protected columns in the result |
@@ -99,6 +155,17 @@ success rate, rejection precision and recall, clarification rate, average steps 
 The tests cover all three levels: valid queries, an intentional code error (failure → repair → success, visible in
 the logs), rejections, synonym queries, ambiguity, red-team prompts and metric calculations.
 
+```mermaid
+flowchart LR
+    T["20 test prompts<br/>5 valid, 2 ambiguous,<br/>13 red-team"] --> AG["Real agent"]
+    AG --> TR["Per case: outcome,<br/>trace, repairs, latency"]
+    TR --> M["Metrics<br/>success rate, rejection precision<br/>and recall, clarification rate,<br/>avg steps, repair rate"]
+    M --> OUT["reports/<br/>eval_report.json, .csv<br/>eval_summary.md"]
+
+    classDef a fill:#e3f2fd,stroke:#1565c0,color:#0d1b2a
+    class AG a
+```
+
 ## Project layout
 
 ```
@@ -111,20 +178,65 @@ data/       employees.csv, sales_dataset.csv
 reports/    evaluation output
 ```
 
-## Honest limitations
+How the modules depend on each other:
 
-- The policy gate is pattern-based; a creative paraphrase may slip past it. The validator and output guard are the
-  backstop. A good next step is an extra LLM intent classifier (as an additional gate, never the only one).
-- Small groups can still reveal an individual (for example an average over a department of one person). A minimum group
-  size rule would address this.
-- `SANDBOX_MODE=thread` cannot kill a runaway computation, only stop waiting for it. Use `process` mode, or a real
-  container/E2B sandbox, for untrusted multi-tenant deployments.
-- Python-level sandboxing is never a perfect boundary. For hostile users, run the whole service in a container with no
-  network access to anything sensitive.
-- Uploaded datasets live in memory only and are lost on restart. There is no authentication on the API.
+```mermaid
+flowchart TD
+    subgraph UI["Interface"]
+        FE["frontend/streamlit_app.py"]
+        API["app/api.py"]
+    end
+    subgraph Core["Orchestration"]
+        AGENT["agent.py"]
+        EVAL["evaluation.py"]
+    end
+    subgraph Steps["Workflow steps"]
+        POL["policy.py"]
+        MAP["schema_mapping.py"]
+        ANA["analysis.py<br/>retry loop"]
+    end
+    subgraph Safe["Safety layers"]
+        VAL["code_validation.py"]
+        SBX["sandbox.py"]
+    end
+    subgraph Sup["Support"]
+        LLM["llm.py<br/>OpenRouter"]
+        PRM["prompts.py"]
+        DAT["datasets.py"]
+    end
 
-## The final question
+    FE --> API --> AGENT
+    EVAL --> AGENT
+    AGENT --> POL
+    AGENT --> MAP
+    AGENT --> ANA
+    ANA --> SBX --> VAL
+    MAP --> LLM
+    ANA --> LLM
+    ANA --> PRM
+    MAP --> PRM
+    API --> DAT
 
-*If your model is small and imperfect, do you trust the model or the system around it?* The system. The model proposes
-code; deterministic layers decide whether a request is allowed, whether the code may run, and whether the result may
-leave. The model is replaceable, and these layers are what you can test and prove.
+    classDef safe fill:#e6f4ea,stroke:#2e7d32,color:#0d1b2a
+    class POL,VAL,SBX safe
+```
+
+## 📄 License
+
+This project is released under the MIT License — feel free to use it for learning or as a portfolio reference.
+
+## 👨‍💻 Author
+
+**Sara Ibrahim**
+Data Scientist | Machine Learning / AI Engineer
+
+[LinkedIn](https://www.linkedin.com/in/YOUR-PROFILE) · [Email](mailto:saraomran433@gmail.com)
+
+## 🌟 Let's Connect!
+
+I'm passionate about solving real-world problems with data, machine learning, and AI. Feel free to reach out for:
+
+- 💼 Job opportunities and collaborations
+- 📚 Technical discussions and knowledge sharing
+- 🚀 Project ideas and innovative solutions
+- ⭐ If you find this project helpful, please give the repo a star!
