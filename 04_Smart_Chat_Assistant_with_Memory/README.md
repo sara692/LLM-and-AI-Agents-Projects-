@@ -252,16 +252,26 @@ Every feature was built incrementally — starting from basic LangChain memory, 
 
 ---
 
-## 🤝 Acknowledgments & Credits
+## 📄 License
 
-This project was developed under the umbrella of the **Digital Egypt Pioneers Initiative (DEPI)** scholarship.
+This project is released under the MIT License — feel free to use it for learning or as a portfolio reference.
 
-Special thanks and appreciation to:
+---
 
-**DEPI (Digital Egypt Pioneers Initiative)**
-For providing the scholarship, resources, and the professional environment to foster innovation in the field of AI and data engineering.
+**Sara Ibrahim**  
+*Data Scientist | Machine Learning / AI Engineer*
 
-**Eng. Baraa Abu Salout**
-For his exceptional mentorship, technical guidance, and for sharing his deep expertise in AI systems, LangChain, and production-grade architecture design.
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/sara-ibrahim-omran)  
+[![Email](https://img.shields.io/badge/Email-Contact%20Me-red?style=flat&logo=gmail)](mailto:Saraomran433@gmail.com)
+---
+
+## 🌟 Let's Connect!
+
+I'm passionate about solving real-world problems with data, machine learning, and AI. Feel free to reach out for:
+
+- 💼 Job opportunities and collaborations
+- 📚 Technical discussions and knowledge sharing
+- 🚀 Project ideas and innovative solutions
+- ⭐ If you find this project helpful, please give the repo a star!
 
 
